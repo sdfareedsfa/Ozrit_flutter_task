@@ -46,7 +46,11 @@ class _HomeScreenState extends State<HomeScreen>
     _bodySlide = Tween<double>(begin: 160, end: 0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: Curves.easeOutQuart,
+        curve: const Interval(
+          0.6, // 👈 body starts AFTER categories
+          1.0,
+          curve: Curves.easeOutQuart,
+        ),
       ),
     );
 
@@ -112,9 +116,54 @@ class _HomeScreenState extends State<HomeScreen>
 
 /* ================= HEADER + CATEGORIES ================= */
 
-class _HeaderWithCategories extends StatelessWidget {
+class _HeaderWithCategories extends StatefulWidget {
   final AnimationController controller;
-  const _HeaderWithCategories({required this.controller});
+  _HeaderWithCategories({required this.controller});
+  int pageIndex = 1; // 0 = first 4, 1 = next 4
+
+
+  @override
+  State<_HeaderWithCategories> createState() =>
+      _HeaderWithCategoriesState();
+}
+
+class _HeaderWithCategoriesState extends State<_HeaderWithCategories> {
+  double rotation = 0.0;
+  int pageIndex = 1;
+
+
+  final categories = [
+    _CategoryData("Grocery", "assets/categories/grocery.png"),
+    _CategoryData("Electronic", "assets/categories/electronic.png"),
+    _CategoryData("Beauty", "assets/categories/beauty.png"),
+    _CategoryData("Fashion", "assets/categories/fashion.png"),
+    _CategoryData("Home", "assets/categories/home.png"),
+    _CategoryData("Stationery", "assets/categories/stationery.png"),
+    _CategoryData("Tools", "assets/categories/tools.png"),
+    _CategoryData("Health", "assets/categories/health.png"),
+  ];
+
+  final finalAngles = [
+    pi / 2 + 0.55,
+    pi / 2 + 0.18,
+    pi / 2 - 0.18,
+    pi / 2 - 0.55,
+  ];
+
+  void _onSwipe(DragEndDetails details) {
+    if (details.primaryVelocity == null) return;
+
+    setState(() {
+      if (details.primaryVelocity! < 0 && pageIndex < 1) {
+        // swipe left → next 4
+        pageIndex++;
+      } else if (details.primaryVelocity! > 0 && pageIndex > 0) {
+        // swipe right → previous 4
+        pageIndex--;
+      }
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -124,119 +173,119 @@ class _HeaderWithCategories extends StatelessWidget {
     final centerY = -circleSize * 0.05;
     final radius = circleSize / 2.2;
 
-    final categories = [
-      _CategoryData("Home", "assets/categories/home.png"),
-      _CategoryData("Stationery", "assets/categories/stationery.png"),
-      _CategoryData("Tools", "assets/categories/tools.png"),
-      _CategoryData("Health", "assets/categories/health.png"),
-    ];
-
-    final finalAngles = [
-      pi / 2 + 0.55,
-      pi / 2 + 0.18,
-      pi / 2 - 0.18,
-      pi / 2 - 0.55,
-    ];
-
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Positioned(
-          top: -circleSize * 0.55,
-          left: (w - circleSize) / 2,
-          child: Container(
-            width: circleSize,
-            height: circleSize,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Color(0xFF184A99),
+    return GestureDetector(
+      onHorizontalDragEnd: _onSwipe,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // 🔵 BLUE BACKGROUND CIRCLE
+          Positioned(
+            top: -circleSize * 0.55,
+            left: (w - circleSize) / 2,
+            child: Container(
+              width: circleSize,
+              height: circleSize,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFF184A99),
+              ),
             ),
           ),
-        ),
 
-        Padding(
-          padding: EdgeInsets.fromLTRB(w * 0.04, w * 0.06, w * 0.04, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("👋 Hii Vikram",
-                          style: TextStyle(color: Colors.white70)),
-                      SizedBox(height: 4),
-                      Text(
-                        "Let’s Shop",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: const [
-                      _HeaderIcon("assets/icons/favorite.png"),
-                      SizedBox(width: 12),
-                      _HeaderIcon("assets/icons/profile.png"),
-                    ],
-                  ),
-                ],
-              ),
-              SizedBox(height: w * 0.05),
-              Container(
-                height: w * 0.12,
-                padding: EdgeInsets.symmetric(horizontal: w * 0.03),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Row(
+          // 🧭 HEADER CONTENT (TEXT + ICONS + SEARCH) — RESTORED
+          Padding(
+            padding: EdgeInsets.fromLTRB(w * 0.04, w * 0.06, w * 0.04, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(Icons.search, color: Colors.grey),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text("Search any Product..",
-                          style: TextStyle(color: Colors.grey)),
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("👋 Hii Vikram",
+                            style: TextStyle(color: Colors.white70)),
+                        SizedBox(height: 4),
+                        Text(
+                          "Let’s Shop",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
-                    Icon(Icons.mic, color: Colors.grey),
+                    Row(
+                      children: const [
+                        _HeaderIcon("assets/icons/favorite.png"),
+                        SizedBox(width: 12),
+                        _HeaderIcon("assets/icons/profile.png"),
+                      ],
+                    ),
                   ],
                 ),
-              ),
-            ],
-          ),
-        ),
-
-        AnimatedBuilder(
-          animation: controller,
-          builder: (_, __) {
-            final t = Curves.easeOutQuart.transform(controller.value);
-            return Stack(
-              children: List.generate(categories.length, (i) {
-                final angle =
-                    (-pi / 2) + (finalAngles[i] + pi / 2) * t;
-                final x = centerX + radius * cos(angle);
-                final y = centerY + radius * sin(angle);
-                return Positioned(
-                  left: x - 28,
-                  top: y,
-                  child: _CategoryItem(
-                    image: categories[i].image,
-                    label: categories[i].label,
+                SizedBox(height: w * 0.05),
+                Container(
+                  height: w * 0.12,
+                  padding: EdgeInsets.symmetric(horizontal: w * 0.03),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                );
-              }),
-            );
-          },
-        ),
-      ],
+                  child: const Row(
+                    children: [
+                      Icon(Icons.search, color: Colors.grey),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text("Search any Product..",
+                            style: TextStyle(color: Colors.grey)),
+                      ),
+                      Icon(Icons.mic, color: Colors.grey),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // 🔄 ROTATING CATEGORIES ON CURVE
+          AnimatedBuilder(
+            animation: widget.controller,
+            builder: (_, __) {
+              final t =
+              Curves.easeOutQuart.transform(widget.controller.value);
+
+              final visibleCategories =
+              categories.skip(pageIndex * 4).take(4).toList();
+
+              return Stack(
+                children: List.generate(visibleCategories.length, (i) {
+                  final angle =
+                      (-pi / 2) + (finalAngles[i] + pi / 2) * t;
+
+                  final x = centerX + radius * cos(angle);
+                  final y = centerY + radius * sin(angle);
+
+                  return Positioned(
+                    left: x - 28,
+                    top: y,
+                    child: _CategoryItem(
+                      image: visibleCategories[i].image,
+                      label: visibleCategories[i].label,
+                    ),
+                  );
+                }),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }
+
 
 /* ================= BODY ================= */
 
@@ -335,13 +384,13 @@ class _BodySection extends StatelessWidget {
                             ),
                             child: Padding(
                               padding: const EdgeInsets.all(36),
-                                child: Align(
+                              child: Align(
                                 alignment: Alignment.centerLeft,
-                              child: Image.asset(
-                                "assets/images/offer.png",
-                                fit: BoxFit.contain,
-                              ),
+                                child: Image.asset(
+                                  "assets/images/offer.png",
+                                  fit: BoxFit.contain,
                                 ),
+                              ),
                             ),
                           ),
                         ),
@@ -469,28 +518,28 @@ class _ExploreButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF194796), // change if needed
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(6), // 👈 box-shaped
-          ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 12,
-          ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF194796), // change if needed
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(6), // 👈 box-shaped
         ),
-        onPressed: () {},
-        child: const Text(
-          "Explore Now",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 12,
         ),
-      );
+      ),
+      onPressed: () {},
+      child: const Text(
+        "Explore Now",
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
 
-    }
+  }
 }
 
 class _HeaderIcon extends StatelessWidget {
